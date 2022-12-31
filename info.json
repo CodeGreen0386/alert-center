@@ -1,0 +1,10 @@
+{
+    "name": "alert-center",
+    "version": "0.0.1",
+    "title": "Alert Center",
+    "author": "_CodeGreen",
+    "contact": "Discord: _CodeGreen#0836",
+    "description": "A GUI for alert history.",
+    "factorio_version": "1.1",
+    "dependencies": ["base >= 1.1"]
+}
