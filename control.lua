@@ -75,11 +75,13 @@ local function alert_caption(count, time)
     return {"", {"alert-caption.count", count}, " (", format_time(time), ")"}
 end
 
+---@param player LuaPlayer
+---@param name string
 local function update_alerts(player, name)
     local alert_type = defines.alert_type[name]
-    local new_alerts = player.get_alerts{surface = player.surface, type = alert_type}
-    if not next(new_alerts) then return end
-    new_alerts = new_alerts[player.surface.index][alert_type] --[[@as table<integer,Alert>]]
+    local polled_alerts = player.get_alerts{surface = player.surface, type = alert_type}
+    if not next(polled_alerts) then return end
+    local new_alerts = polled_alerts[player.surface.index][alert_type]
     local refs = global.players[player.index]
     local alerts = refs.alerts[name]
     local groups = refs.groups[name]
@@ -115,6 +117,8 @@ local function update_alerts(player, name)
     end
 end
 
+---@param player LuaPlayer
+---@param alert_name string
 local function update_gui(player, alert_name)
     local refs = global.players[player.index]
     local alert_flow = refs[alert_name]
@@ -137,16 +141,27 @@ local function update_gui(player, alert_name)
     end
 end
 
+---@class AlertInfo
+---@field name string
+---@field icon SpritePath
+
+---@type AlertInfo[]
+local alert_info = {
+    {name = "turret_fire", icon = "utility/warning_icon"},
+    {name = "entity_under_attack", icon = "utility/danger_icon"},
+    {name = "entity_destroyed", icon = "utility/destroyed_icon"},
+}
+
 script.on_nth_tick(60, function(event)
     if event.tick == 0 then return end
     for _, player in pairs(game.connected_players) do
-        update_alerts(player, "turret_fire")
-        update_alerts(player, "entity_under_attack")
-        update_alerts(player, "entity_destroyed")
+        for _, alert in pairs(alert_info) do
+            update_alerts(player, alert.name)
+        end
         if not player.gui.screen.alert_center.visible then return end
-        update_gui(player, "turret_fire")
-        update_gui(player, "entity_under_attack")
-        update_gui(player, "entity_destroyed")
+        for _, alert in pairs(alert_info) do
+            update_gui(player, alert.name)
+        end
     end
 end)
 
@@ -164,6 +179,8 @@ glib.add_handlers(handlers, function(event, handler)
     handler(refs, event)
 end)
 
+---@param name string
+---@param icon SpritePath
 local function alert_header(name, icon)
     return {
         args = {type = "frame", style = "inside_deep_frame"},
@@ -172,11 +189,19 @@ local function alert_header(name, icon)
             args = {type = "frame", style = "subheader_frame"},
             style_mods = {horizontally_stretchable = true},
             children = {{
-                args = {type = "label", caption = {"", "[img=utility/"..icon.."] ", {"alert-type."..name}}, style = "subheader_label"},
+                args = {type = "label", caption = {"", "[img="..icon.."] ", {"alert-type."..name}}, style = "subheader_label"},
                 style_mods = {right_padding = 8},
             }}
         }}
     }
+end
+
+local function alert_headers()
+    local t = {}
+    for _, alert in pairs(alert_info) do
+        t[#t+1] = alert_header(alert.name, alert.icon)
+    end
+    return t
 end
 
 local function alert_column(name)
@@ -188,6 +213,14 @@ local function alert_column(name)
             style_mods = {vertically_stretchable = true}
         }}
     }
+end
+
+local function alert_columns()
+    local t = {}
+    for _, alert in pairs(alert_info) do
+        t[#t+1] = alert_column(alert.name)
+    end
+    return t
 end
 
 defs.alert_gui = {
@@ -211,23 +244,15 @@ defs.alert_gui = {
                 handlers = {[e.on_gui_click] = handlers.gui_closed},
             }}
         },{
-            args = {type = "flow", direction = horizontal},
-            children = {
-                alert_header("turret_fire", "warning_icon"),
-                alert_header("entity_under_attack", "danger_icon"),
-                alert_header("entity_destroyed", "destroyed_icon"),
-            }
+            args = {type = "flow", direction = "horizontal"},
+            children = alert_headers()
         },{
             args = {type = "scroll-pane", style = "naked_scroll_pane"},
             elem_mods = {horizontal_scroll_policy = "never"},
             style_mods = {minimal_height = 140, maximal_height = 560},
             children = {{
                 args = {type = "flow", direction = "horizontal"},
-                children = {
-                    alert_column("turret_fire"),
-                    alert_column("entity_under_attack"),
-                    alert_column("entity_destroyed"),
-                }
+                children = alert_columns()
             }}
         }}
     }}
