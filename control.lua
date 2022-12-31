@@ -45,6 +45,7 @@ local function open_gui(event)
     gui.visible = true
     gui.force_auto_center()
     gui.bring_to_front()
+    player.opened = gui
 end
 
 script.on_event("alert-center", open_gui)
