@@ -68,7 +68,14 @@ local function format_time(n)
     local s = math.floor(n / 60)
     local m = math.floor(s / 60)
     s = s % 60
-    return string.format("%d:%02d", m, s)
+    local pre = ""
+    local post = m < 3 and "[/color][/font]" or ""
+    if m == 0 then
+        pre = "[font=default-bold][color=#d7342a]" -- red
+    elseif m < 3 then
+        pre = "[font=default-bold][color=yellow]"
+    end
+    return pre .. string.format("%d:%02d", m, s) .. post
 end
 
 local function alert_caption(count, time)
