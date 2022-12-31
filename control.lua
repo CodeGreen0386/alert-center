@@ -81,7 +81,6 @@ local function update_alerts(player, name)
     if not next(new_alerts) then return end
     new_alerts = new_alerts[player.surface.index][alert_type] --[[@as table<integer,Alert>]]
     local refs = global.players[player.index]
-    local alert_flow = refs[name]
     local alerts = refs.alerts[name]
     local groups = refs.groups[name]
     local game_tick = game.tick
@@ -114,6 +113,14 @@ local function update_alerts(player, name)
             alerts[id] = nil
         end
     end
+end
+
+local function update_gui(player, alert_name)
+    local refs = global.players[player.index]
+    local alert_flow = refs[alert_name]
+    local groups = refs.groups[alert_name]
+    local game_tick = game.tick
+
     for id, group in pairs(groups) do
         if group.count <= 0 then
             groups[id] = nil
@@ -133,10 +140,13 @@ end
 script.on_nth_tick(60, function(event)
     if event.tick == 0 then return end
     for _, player in pairs(game.connected_players) do
-        if not player.gui.screen.alert_center.visible then return end
         update_alerts(player, "turret_fire")
         update_alerts(player, "entity_under_attack")
         update_alerts(player, "entity_destroyed")
+        if not player.gui.screen.alert_center.visible then return end
+        update_gui(player, "turret_fire")
+        update_gui(player, "entity_under_attack")
+        update_gui(player, "entity_destroyed")
     end
 end)
 
