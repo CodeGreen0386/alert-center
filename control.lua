@@ -3,13 +3,7 @@ local e = defines.events
 local handlers = {}
 local defs = {}
 
-local function setup_globals()
-    global.players = global.players or {}
-end
-
-script.on_init(setup_globals)
-script.on_configuration_changed(setup_globals)
-
+---@param player LuaPlayer
 local function create_gui(player)
     global.players[player.index] = {
         player = player,
@@ -29,6 +23,21 @@ local function create_gui(player)
     return gui
 end
 
+---@param player LuaPlayer
+local function setup_player(player)
+    local gui = create_gui(player)
+    gui.visible = false
+end
+
+local function initial_setup()
+    global.players = {}
+    for _, player in pairs(game.players) do
+        setup_player(player)
+    end
+end
+
+script.on_init(initial_setup)
+
 local function open_gui(event)
     local player = game.get_player(event.player_index) --[[@as LuaPlayer]]
     local gui = player.gui.screen.alert_center
@@ -45,9 +54,7 @@ script.on_event(defines.events.on_lua_shortcut, function (event)
 end)
 
 script.on_event(defines.events.on_player_created, function(event)
-    local player = game.get_player(event.player_index) --[[@as LuaPlayer]]
-    local gui = create_gui(player)
-    gui.visible = false
+    setup_player(game.get_player(event.player_index) --[[@as LuaPlayer]])
 end)
 
 local vec = {}
