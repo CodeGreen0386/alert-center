@@ -90,15 +90,19 @@ local function update_alerts(player)
         if not next(polled_alerts) then return end
         local new_alerts = polled_alerts[player.surface.index][alert_type]
         local refs = global.players[player.index]
-        --- @type table<AlertID,SavedAlert>
-        local alerts = refs.alerts[name]
-        --- @type table<GroupID,Group>
-        local groups = refs.groups[name]
+        local alerts = refs.alerts[name] --- @type table<AlertID,SavedAlert>
+        local groups = refs.groups[name] --- @type table<GroupID,Group>
         local game_tick = game.tick
         for _, new_alert in pairs(new_alerts) do
             local position = new_alert.position or new_alert.target.position
             local id = position.x..","..position.y --- @type AlertID
-            if alerts[id] then goto continue end
+            if alerts[id] then
+                local group = alerts[id].group
+                if new_alert.tick > groups[group].tick then
+                    groups[group].tick = new_alert.tick
+                end
+                goto continue
+            end
             local alert = {count = 0} --- @type SavedAlert
             alerts[id] = alert
             for group_id, group in pairs(groups) do
