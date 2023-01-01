@@ -3,33 +3,33 @@ local e = defines.events
 local handlers = {}
 local defs = {}
 
----@class Group
----@field count integer
----@field position MapPosition
----@field tick uint
----@field alerts MapPosition[]
+--- @class Group
+--- @field count integer
+--- @field position MapPosition
+--- @field tick uint
+--- @field alerts MapPosition[]
 
----@alias GroupID AlertID
----@alias AlertID string
+--- @alias GroupID AlertID
+--- @alias AlertID string
 
----@class SavedAlert
----@field count integer more like a timer
----@field group GroupID
+--- @class SavedAlert
+--- @field count integer more like a timer
+--- @field group GroupID
 
----@param player LuaPlayer
----@return LuaGuiElement
+--- @param player LuaPlayer
+--- @return LuaGuiElement
 local function create_gui(player)
     global.players[player.index] = {
         player = player,
         groups = {
-            turret_fire = {}, ---@type table<GroupID,Group>
-            entity_under_attack = {}, ---@type table<GroupID,Group>
-            entity_destroyed = {}, ---@type table<GroupID,Group>
+            turret_fire = {}, --- @type table<GroupID,Group>
+            entity_under_attack = {}, --- @type table<GroupID,Group>
+            entity_destroyed = {}, --- @type table<GroupID,Group>
         },
         alerts = {
-            turret_fire = {}, ---@type table<AlertID,SavedAlert>
-            entity_under_attack = {}, ---@type table<AlertID,SavedAlert>
-            entity_destroyed = {}, ---@type table<AlertID,SavedAlert>
+            turret_fire = {}, --- @type table<AlertID,SavedAlert>
+            entity_under_attack = {}, --- @type table<AlertID,SavedAlert>
+            entity_destroyed = {}, --- @type table<AlertID,SavedAlert>
         },
     }
     local refs = global.players[player.index]
@@ -37,7 +37,7 @@ local function create_gui(player)
     return gui
 end
 
----@param player LuaPlayer
+--- @param player LuaPlayer
 local function setup_player(player)
     local gui = create_gui(player)
     gui.visible = false
@@ -97,24 +97,24 @@ local function alert_caption(count, time)
     return {"", {"alert-caption.count", count}, " (", format_time(time), ")"}
 end
 
----@param player LuaPlayer
----@param name string
+--- @param player LuaPlayer
+--- @param name string
 local function update_alerts(player, name)
     local alert_type = defines.alert_type[name]
     local polled_alerts = player.get_alerts{surface = player.surface, type = alert_type}
     if not next(polled_alerts) then return end
     local new_alerts = polled_alerts[player.surface.index][alert_type]
     local refs = global.players[player.index]
-    ---@type table<AlertID,SavedAlert>
+    --- @type table<AlertID,SavedAlert>
     local alerts = refs.alerts[name]
-    ---@type table<GroupID,Group>
+    --- @type table<GroupID,Group>
     local groups = refs.groups[name]
     local game_tick = game.tick
     for _, new_alert in pairs(new_alerts) do
         local position = new_alert.position or new_alert.target.position
-        local id = position.x..","..position.y ---@type AlertID
+        local id = position.x..","..position.y --- @type AlertID
         if alerts[id] then goto continue end
-        local alert = {count = 0} ---@type SavedAlert
+        local alert = {count = 0} --- @type SavedAlert
         alerts[id] = alert
         for group_id, group in pairs(groups) do
             local dist = vec.mag(vec.sub(group.position, position))
@@ -127,7 +127,7 @@ local function update_alerts(player, name)
                 goto continue
             end
         end
-        local group = {count = 1, position = position, tick = game_tick, alerts = {position}} ---@type Group
+        local group = {count = 1, position = position, tick = game_tick, alerts = {position}} --- @type Group
         groups[id] = group
         alert.group = id
         ::continue::
@@ -142,12 +142,12 @@ local function update_alerts(player, name)
     end
 end
 
----@param player LuaPlayer
----@param alert_name string
+--- @param player LuaPlayer
+--- @param alert_name string
 local function update_gui(player, alert_name)
     local refs = global.players[player.index]
     local alert_flow = refs[alert_name]
-    ---@type table<GroupID,Group>
+    --- @type table<GroupID,Group>
     local groups = refs.groups[alert_name]
     local game_tick = game.tick
 
@@ -167,10 +167,10 @@ local function update_gui(player, alert_name)
     end
 end
 
----@class AlertInfo
----@field icon SpritePath
+--- @class AlertInfo
+--- @field icon SpritePath
 
----@type table<string, AlertInfo> name to info
+--- @type table<string, AlertInfo> name to info
 local alert_info = {
     turret_fire = {icon = "utility/warning_icon"},
     entity_under_attack = {icon = "utility/danger_icon"},
@@ -197,7 +197,7 @@ end
 function handlers.zoom_to_world(refs, event)
     rendering.clear("alert-center") -- TODO make this clearing per player
     local element = event.element
-    ---@type Group
+    --- @type Group
     local group = refs.groups[element.parent.name][element.name]
     refs.player.zoom_to_world(group.position, 0.8)
     local sprite = alert_info[element.parent.name].icon
@@ -219,8 +219,8 @@ glib.add_handlers(handlers, function(event, handler)
     handler(refs, event)
 end)
 
----@param name string
----@param icon SpritePath
+--- @param name string
+--- @param icon SpritePath
 local function alert_header(name, icon)
     return {
         args = {type = "frame", style = "inside_deep_frame"},
