@@ -57,7 +57,6 @@ local function open_gui(event)
     local gui = player.gui.screen.alert_center
     if not gui then gui = create_gui(player) end
     gui.visible = true
-    gui.force_auto_center()
     gui.bring_to_front()
     player.opened = gui
 end
