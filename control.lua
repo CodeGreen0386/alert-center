@@ -7,7 +7,7 @@ local defs = {}
 --- @field count integer
 --- @field position MapPosition
 --- @field tick uint
---- @field alerts Alert[]
+--- @field alerts table<AlertID,Alert>
 
 --- @alias GroupID AlertID
 --- @alias AlertID string
@@ -121,7 +121,7 @@ local function update_alerts(player, name)
             if dist <= 20 then
                 group.count = group.count + 1
                 alert.group = group_id
-                group.alerts[#group.alerts+1] = new_alert
+                group.alerts[id] = new_alert
                 group.position = vec.add(vec.div(vec.sub(position, group.position), vec.new(group.count)), group.position)
                 group.tick = game_tick
                 goto continue
@@ -132,12 +132,16 @@ local function update_alerts(player, name)
         alert.group = id
         ::continue::
     end
-    for id, alert in pairs(alerts) do
+    for alert_id, alert in pairs(alerts) do
         alert.count = alert.count + 1
         if alert.count >= 600 then
             local group = groups[alert.group]
             group.count = group.count - 1
-            alerts[id] = nil
+            alerts[alert_id] = nil
+            group.alerts[alert_id] = nil
+            if group.count <= 0 then
+                groups[alert.group] = nil
+            end
         end
     end
 end
@@ -146,16 +150,14 @@ end
 --- @param alert_name string
 local function update_gui(player, alert_name)
     local refs = global.players[player.index]
+    --- @type LuaGuiElement
     local alert_flow = refs[alert_name]
     --- @type table<GroupID,Group>
     local groups = refs.groups[alert_name]
     local game_tick = game.tick
 
     for id, group in pairs(groups) do
-        if group.count <= 0 then
-            groups[id] = nil
-            alert_flow[id].destroy()
-        elseif not alert_flow[id] then
+        if not alert_flow[id] then
             glib.add(alert_flow, {
                 args = {type = "button", name = id, index = 1, caption = alert_caption(group.count, 0), style = "list_box_item"},
                 style_mods = {horizontally_stretchable = true},
@@ -163,6 +165,12 @@ local function update_gui(player, alert_name)
             })
         else
             alert_flow[id].caption = alert_caption(group.count, game_tick - group.tick)
+        end
+    end
+
+    for _, group_id in pairs(alert_flow.children_names) do
+        if not groups[group_id] then
+            alert_flow[group_id].destroy()
         end
     end
 end
