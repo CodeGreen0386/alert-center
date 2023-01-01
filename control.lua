@@ -4,6 +4,16 @@ local handlers = {}
 local defs = {}
 local poll_rate = 60
 
+--- @class AlertInfo
+--- @field icon SpritePath
+
+--- @type table<string, AlertInfo> name to info
+local alert_info = {
+    turret_fire = {icon = "utility/warning_icon"},
+    entity_under_attack = {icon = "utility/danger_icon"},
+    entity_destroyed = {icon = "utility/destroyed_icon"},
+}
+
 --- @class Group
 --- @field count integer
 --- @field position MapPosition
@@ -181,16 +191,6 @@ script.on_event(defines.events.on_lua_shortcut, function (event)
     if event.prototype_name ~= "alert-center" then return end
     open_gui(event)
 end)
-
---- @class AlertInfo
---- @field icon SpritePath
-
---- @type table<string, AlertInfo> name to info
-local alert_info = {
-    turret_fire = {icon = "utility/warning_icon"},
-    entity_under_attack = {icon = "utility/danger_icon"},
-    entity_destroyed = {icon = "utility/destroyed_icon"},
-}
 
 script.on_nth_tick(poll_rate, function(event)
     if event.tick == 0 then return end
