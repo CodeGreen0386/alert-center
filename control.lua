@@ -101,7 +101,7 @@ local function update_alerts(player)
         local groups = refs.groups[name] --- @type table<GroupID,Group>
         local game_tick = game.tick
         for _, new_alert in pairs(new_alerts) do
-            local position = new_alert.position or new_alert.target.position
+            local position = new_alert.position --[[@as MapPosition]]
             local id = position.x..","..position.y --- @type AlertID
             if alerts[id] then
                 local group = alerts[id].group
@@ -115,15 +115,20 @@ local function update_alerts(player)
             for group_id, group in pairs(groups) do
                 local dist = vec.mag(vec.sub(group.position, position))
                 if dist <= 32 then
-                    group.count = group.count + 1
                     alert.group = group_id
+                    group.count = group.count + 1
+                    group.tick = game_tick
                     group.alerts[id] = new_alert
                     group.position = vec.add(vec.div(vec.sub(position, group.position), vec.new(group.count)), group.position)
-                    group.tick = game_tick
                     goto continue
                 end
             end
-            local group = {count = 1, position = position, tick = game_tick, alerts = {new_alert}} --- @type Group
+            local group = {
+                count = 1,
+                tick = game_tick,
+                alerts = {[id] = new_alert},
+                position = position
+            } --- @type Group
             groups[id] = group
             alert.group = id
             ::continue::
@@ -147,10 +152,8 @@ end
 local function update_gui(player)
     local refs = global.players[player.index]
     for name in pairs(alert_info) do
-        --- @type LuaGuiElement
-        local alert_flow = refs[name]
-        --- @type table<GroupID,Group>
-        local groups = refs.groups[name]
+        local alert_flow = refs[name] --- @type LuaGuiElement
+        local groups = refs.groups[name] --- @type table<GroupID,Group>
         local game_tick = game.tick
 
         for id, group in pairs(groups) do
