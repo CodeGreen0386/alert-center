@@ -2,6 +2,7 @@ local glib = require("__glib__/gui")
 local e = defines.events
 local handlers = {}
 local defs = {}
+local poll_rate = 60
 
 --- @class Group
 --- @field count integer
@@ -118,7 +119,7 @@ local function update_alerts(player)
         end
         for alert_id, alert in pairs(alerts) do
             alert.count = alert.count + 1
-            if alert.count >= 600 then
+            if alert.count >= 3600 / poll_rate then
                 local group = groups[alert.group]
                 group.count = group.count - 1
                 alerts[alert_id] = nil
@@ -187,12 +188,12 @@ local alert_info = {
     entity_destroyed = {icon = "utility/destroyed_icon"},
 }
 
-script.on_nth_tick(60, function(event)
+script.on_nth_tick(poll_rate, function(event)
     if event.tick == 0 then return end
     for _, player in pairs(game.connected_players) do
-        update_alerts(player, alert)
+        update_alerts(player)
         if not player.gui.screen.alert_center.visible then return end
-        update_gui(player, alert)
+        update_gui(player)
     end
 end)
 
