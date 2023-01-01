@@ -81,7 +81,7 @@ local function format_time(n)
     local pre = ""
     local post = m < 3 and "[/color][/font]" or ""
     if m == 0 then
-        pre = "[font=default-bold][color=#d7342a]" -- red
+        pre = "[font=default-bold][color=red]" -- red
     elseif m < 3 then
         pre = "[font=default-bold][color=yellow]"
     end
@@ -96,6 +96,7 @@ end
 local function update_alerts(player)
     for name in pairs(alert_info) do
         local alert_type = defines.alert_type[name]
+
         local polled_alerts = player.get_alerts{surface = player.surface, type = alert_type}
         if not next(polled_alerts) then return end
         local new_alerts = polled_alerts[player.surface.index][alert_type]
@@ -133,7 +134,7 @@ local function update_alerts(player)
         end
         for alert_id, alert in pairs(alerts) do
             alert.count = alert.count + 1
-            if alert.count >= 3600 / poll_rate then
+            if alert.count >= 36000 / poll_rate then
                 local group = groups[alert.group]
                 group.count = group.count - 1
                 alerts[alert_id] = nil
@@ -205,6 +206,7 @@ function handlers.gui_closed(refs)
     refs.alert_center.visible = false
 end
 
+local opacity = 0.69
 function handlers.zoom_to_world(refs, event)
     rendering.clear("alert-center") -- TODO make this clearing per player
     local element = event.element
@@ -221,8 +223,8 @@ function handlers.zoom_to_world(refs, event)
             target = position,
             target_offset = offset,
             surface = refs.player.surface,
-            time_to_live = 60 * 20,
-            tint = {0.5, 0.5, 0.5, 0.5},
+            time_to_live = 900, -- 15 * 60
+            tint = {opacity, opacity, opacity, opacity},
             x_scale = scale,
             y_scale = scale
         }
