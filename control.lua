@@ -3,19 +3,33 @@ local e = defines.events
 local handlers = {}
 local defs = {}
 
+---@class Group
+---@field count integer
+---@field position MapPosition
+---@field tick uint
+---@field alerts MapPosition[]
+
+---@alias GroupID AlertID
+---@alias AlertID string
+
+---@class SavedAlert
+---@field count integer more like a timer
+---@field group GroupID
+
 ---@param player LuaPlayer
+---@return LuaGuiElement
 local function create_gui(player)
     global.players[player.index] = {
         player = player,
         groups = {
-            turret_fire = {},
-            entity_under_attack = {},
-            entity_destroyed = {},
+            turret_fire = {}, ---@type table<GroupID,Group>
+            entity_under_attack = {}, ---@type table<GroupID,Group>
+            entity_destroyed = {}, ---@type table<GroupID,Group>
         },
         alerts = {
-            turret_fire = {},
-            entity_under_attack = {},
-            entity_destroyed = {},
+            turret_fire = {}, ---@type table<AlertID,SavedAlert>
+            entity_under_attack = {}, ---@type table<AlertID,SavedAlert>
+            entity_destroyed = {}, ---@type table<AlertID,SavedAlert>
         },
     }
     local refs = global.players[player.index]
@@ -91,26 +105,29 @@ local function update_alerts(player, name)
     if not next(polled_alerts) then return end
     local new_alerts = polled_alerts[player.surface.index][alert_type]
     local refs = global.players[player.index]
+    ---@type table<AlertID,SavedAlert>
     local alerts = refs.alerts[name]
+    ---@type table<GroupID,Group>
     local groups = refs.groups[name]
     local game_tick = game.tick
     for _, new_alert in pairs(new_alerts) do
         local position = new_alert.position or new_alert.target.position
-        local id = position.x..","..position.y
+        local id = position.x..","..position.y ---@type AlertID
         if alerts[id] then goto continue end
-        local alert = {count = 0}
+        local alert = {count = 0} ---@type SavedAlert
         alerts[id] = alert
         for group_id, group in pairs(groups) do
             local dist = vec.mag(vec.sub(group.position, position))
             if dist <= 20 then
                 group.count = group.count + 1
                 alert.group = group_id
+                group.alerts[#group.alerts+1] = position
                 group.position = vec.add(vec.div(vec.sub(position, group.position), vec.new(group.count)), group.position)
                 group.tick = game_tick
                 goto continue
             end
         end
-        local group = {count = 1, position = position, tick = game_tick} ---@type table<string,any>
+        local group = {count = 1, position = position, tick = game_tick, alerts = {position}} ---@type Group
         groups[id] = group
         alert.group = id
         ::continue::
@@ -130,6 +147,7 @@ end
 local function update_gui(player, alert_name)
     local refs = global.players[player.index]
     local alert_flow = refs[alert_name]
+    ---@type table<GroupID,Group>
     local groups = refs.groups[alert_name]
     local game_tick = game.tick
 
@@ -150,25 +168,24 @@ local function update_gui(player, alert_name)
 end
 
 ---@class AlertInfo
----@field name string
 ---@field icon SpritePath
 
----@type AlertInfo[]
+---@type table<string, AlertInfo> name to info
 local alert_info = {
-    {name = "turret_fire", icon = "utility/warning_icon"},
-    {name = "entity_under_attack", icon = "utility/danger_icon"},
-    {name = "entity_destroyed", icon = "utility/destroyed_icon"},
+    turret_fire = {icon = "utility/warning_icon"},
+    entity_under_attack = {icon = "utility/danger_icon"},
+    entity_destroyed = {icon = "utility/destroyed_icon"},
 }
 
 script.on_nth_tick(60, function(event)
     if event.tick == 0 then return end
     for _, player in pairs(game.connected_players) do
-        for _, alert in pairs(alert_info) do
-            update_alerts(player, alert.name)
+        for alert in pairs(alert_info) do
+            update_alerts(player, alert)
         end
         if not player.gui.screen.alert_center.visible then return end
-        for _, alert in pairs(alert_info) do
-            update_gui(player, alert.name)
+        for alert in pairs(alert_info) do
+            update_gui(player, alert)
         end
     end
 end)
@@ -178,8 +195,23 @@ function handlers.gui_closed(refs)
 end
 
 function handlers.zoom_to_world(refs, event)
+    rendering.clear("alert-center") -- TODO make this clearing per player
     local element = event.element
-    refs.player.zoom_to_world(refs.groups[element.parent.name][element.name].position, 1)
+    ---@type Group
+    local group = refs.groups[element.parent.name][element.name]
+    refs.player.zoom_to_world(group.position, 0.8)
+    local sprite = alert_info[element.parent.name].icon
+    for _, pos in pairs(group.alerts) do
+        rendering.draw_sprite{
+            sprite = sprite,
+            target = pos,
+            surface = refs.player.surface,
+            time_to_live = 60 * 20,
+            tint = {0.5, 0.5, 0.5, 0.5},
+            x_scale = 0.75,
+            y_scale = 0.75
+        }
+    end
 end
 
 glib.add_handlers(handlers, function(event, handler)
@@ -239,8 +271,8 @@ defs.alert_gui = {
             args = {type = "flow", direction = "horizontal"},
             children = (function()
                 local t = {}
-                for _, alert in pairs(alert_info) do
-                    t[#t+1] = alert_header(alert.name, alert.icon)
+                for name, alert in pairs(alert_info) do
+                    t[#t+1] = alert_header(name, alert.icon)
                 end
                 return t
             end)()
@@ -252,8 +284,8 @@ defs.alert_gui = {
                 args = {type = "flow", direction = "horizontal"},
                 children = (function()
                     local t = {}
-                    for _, alert in pairs(alert_info) do
-                        t[#t+1] = alert_column(alert.name)
+                    for alert in pairs(alert_info) do
+                        t[#t+1] = alert_column(alert)
                     end
                     return t
                 end)()
