@@ -56,4 +56,5 @@ data:extend{{
         mipmap_count = 2,
         flags = {"gui-icon"}
     },
+    order = "zzzzz"
 }}
