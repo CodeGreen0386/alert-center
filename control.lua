@@ -7,7 +7,7 @@ local defs = {}
 --- @field count integer
 --- @field position MapPosition
 --- @field tick uint
---- @field alerts MapPosition[]
+--- @field alerts Alert[]
 
 --- @alias GroupID AlertID
 --- @alias AlertID string
@@ -121,13 +121,13 @@ local function update_alerts(player, name)
             if dist <= 20 then
                 group.count = group.count + 1
                 alert.group = group_id
-                group.alerts[#group.alerts+1] = position
+                group.alerts[#group.alerts+1] = new_alert
                 group.position = vec.add(vec.div(vec.sub(position, group.position), vec.new(group.count)), group.position)
                 group.tick = game_tick
                 goto continue
             end
         end
-        local group = {count = 1, position = position, tick = game_tick, alerts = {position}} --- @type Group
+        local group = {count = 1, position = position, tick = game_tick, alerts = {new_alert}} --- @type Group
         groups[id] = group
         alert.group = id
         ::continue::
@@ -201,15 +201,19 @@ function handlers.zoom_to_world(refs, event)
     local group = refs.groups[element.parent.name][element.name]
     refs.player.zoom_to_world(group.position, 0.8)
     local sprite = alert_info[element.parent.name].icon
-    for _, pos in pairs(group.alerts) do
+    for _, alert in pairs(group.alerts) do
+        local position = alert.position or alert.target.position
+        local offset = alert.prototype.alert_icon_shift
+        local scale = 0.5 --alert.prototype.alert_icon_scale
         rendering.draw_sprite{
             sprite = sprite,
-            target = pos,
+            target = position,
+            target_offset = offset,
             surface = refs.player.surface,
             time_to_live = 60 * 20,
             tint = {0.5, 0.5, 0.5, 0.5},
-            x_scale = 0.75,
-            y_scale = 0.75
+            x_scale = scale,
+            y_scale = scale
         }
     end
 end
