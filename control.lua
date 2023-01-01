@@ -92,8 +92,7 @@ end
 --- @param player LuaPlayer
 local function update_alerts(player)
     for name in pairs(alert_info) do
-        local alert_type = defines.alert_type[name]
-
+        local alert_type = defines.alert_type[name] --[[@as defines.alert_type]]
         local polled_alerts = player.get_alerts{surface = player.surface, type = alert_type}
         if not next(polled_alerts) then return end
         local new_alerts = polled_alerts[player.surface.index][alert_type]
@@ -176,11 +175,12 @@ end
 
 local function open_gui(event)
     local player = game.get_player(event.player_index) --[[@as LuaPlayer]]
-    local gui = player.gui.screen.alert_center
+    local refs = global.players[event.player_index]
+    local gui = refs.alert_center
     if not gui then gui = create_gui(player) end
     gui.visible = true
     gui.bring_to_front()
-    player.opened = gui
+    if not refs.pinned then player.opened = gui end
     update_gui(player)
 end
 
@@ -200,7 +200,27 @@ script.on_nth_tick(poll_rate, function(event)
 end)
 
 function handlers.gui_closed(refs)
+    if refs.pinned == true then return end
     refs.alert_center.visible = false
+end
+
+function handlers.close_button(refs)
+    refs.alert_center.visible = false
+end
+
+function handlers.pin_clicked(refs)
+    local pin_button = refs.pin_button ---@type LuaGuiElement
+    if pin_button.style.name == "frame_action_button" then
+        pin_button.style = "frame_action_button_selected"
+        pin_button.sprite = "pin-black"
+        refs.pinned = true
+        refs.player.opened = nil
+    else
+        pin_button.style = "frame_action_button"
+        pin_button.sprite = "pin-white"
+        refs.pinned = false
+        refs.player.opened = refs.alert_center
+    end
 end
 
 local opacity = 0.69
@@ -283,9 +303,13 @@ defs.alert_gui = {
                 args = {type = "empty-widget", style = "draggable_space_header", ignored_by_interaction = true},
                 style_mods = {height = 24, right_margin = 4, horizontally_stretchable = true}
             },{
+                args = {type = "sprite-button", name = "pin_button", style = "frame_action_button",
+                sprite = "pin-white", hovered_sprite = "pin-black", clicked_sprite = "pin-black"},
+                handlers = {[e.on_gui_click] = handlers.pin_clicked}
+            },{
                 args = {type = "sprite-button", style = "frame_action_button",
                 sprite = "utility/close_white", hovered_sprite = "utility/close_black", clicked_sprite = "utility/close_black"},
-                handlers = {[e.on_gui_click] = handlers.gui_closed},
+                handlers = {[e.on_gui_click] = handlers.close_button},
             }}
         },{
             args = {type = "flow", direction = "horizontal"},

@@ -1,4 +1,19 @@
+local glib = require("__glib__/style")
 local styles = data.raw["gui-style"].default
+
+glib.generate_selected("frame_action_button")
+
+data:extend{{
+    type = "sprite",
+    name = "pin-black",
+    filename = "__alert-center__/graphics/pin_black.png",
+    size = 32,
+},{
+    type = "sprite",
+    name = "pin-white",
+    filename = "__alert-center__/graphics/pin_white.png",
+    size = 32,
+}}
 
 styles.list_box_frame = {
     type = "frame_style",
@@ -33,7 +48,7 @@ styles.list_box_frame = {
 data:extend{{
     type = "custom-input",
     name = "alert-center",
-    key_sequence = "ALT + SHIFT + A",
+    key_sequence = "SHIFT + ALT + A",
     action = "lua"
 },{
     type = "shortcut",
