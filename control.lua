@@ -4,14 +4,11 @@ local handlers = {}
 local defs = {}
 local poll_rate = 60
 
---- @class AlertInfo
---- @field icon SpritePath
-
---- @type table<string, AlertInfo> name to info
+--- @type table<string, SpritePath> name to info
 local alert_info = {
-    turret_fire = {icon = "utility/warning_icon"},
-    entity_under_attack = {icon = "utility/danger_icon"},
-    entity_destroyed = {icon = "utility/destroyed_icon"},
+    turret_fire = "utility/warning_icon",
+    entity_under_attack = "utility/danger_icon",
+    entity_destroyed = "utility/destroyed_icon",
 }
 
 --- @class Group
@@ -213,7 +210,7 @@ function handlers.zoom_to_world(refs, event)
     --- @type Group
     local group = refs.groups[element.parent.name][element.name]
     refs.player.zoom_to_world(group.position, 0.8)
-    local sprite = alert_info[element.parent.name].icon
+    local sprite = alert_info[element.parent.name]
     for _, alert in pairs(group.alerts) do
         local position = alert.position or alert.target.position
         local offset = alert.prototype.alert_icon_shift
@@ -236,32 +233,38 @@ glib.add_handlers(handlers, function(event, handler)
     handler(refs, event)
 end)
 
---- @param name string
---- @param icon SpritePath
-local function alert_header(name, icon)
-    return {
-        args = {type = "frame", style = "inside_deep_frame"},
-        style_mods = {width = 160},
-        children = {{
-            args = {type = "frame", style = "subheader_frame"},
-            style_mods = {horizontally_stretchable = true},
+local function alert_headers()
+    local t = {}
+    for name, icon in pairs(alert_info) do
+        t[#t+1] = {
+            args = {type = "frame", style = "inside_deep_frame"},
+            style_mods = {width = 160},
             children = {{
-                args = {type = "label", caption = {"", "[img="..icon.."] ", {"alert-type."..name}}, style = "subheader_label"},
-                style_mods = {right_padding = 8},
+                args = {type = "frame", style = "subheader_frame"},
+                style_mods = {horizontally_stretchable = true},
+                children = {{
+                    args = {type = "label", caption = {"", "[img="..icon.."] ", {"alert-type."..name}}, style = "subheader_label"},
+                    style_mods = {right_padding = 8},
+                }}
             }}
-        }}
-    }
+        }
+    end
+    return t
 end
 
-local function alert_column(name)
-    return {
-        args = {type = "frame", direction = "vertical", style = "inside_deep_frame"},
-        style_mods = {width = 160},
-        children = {{
-            args = {type = "frame", name = name, direction = "vertical", style = "list_box_frame"},
-            style_mods = {vertically_stretchable = true}
-        }}
-    }
+local function alert_columns()
+    local t = {}
+    for name in pairs(alert_info) do
+        t[#t+1] = {
+            args = {type = "frame", direction = "vertical", style = "inside_deep_frame"},
+            style_mods = {width = 160},
+            children = {{
+                args = {type = "frame", name = name, direction = "vertical", style = "list_box_frame"},
+                style_mods = {vertically_stretchable = true}
+            }}
+        }
+    end
+    return t
 end
 
 defs.alert_gui = {
@@ -286,26 +289,14 @@ defs.alert_gui = {
             }}
         },{
             args = {type = "flow", direction = "horizontal"},
-            children = (function()
-                local t = {}
-                for name, alert in pairs(alert_info) do
-                    t[#t+1] = alert_header(name, alert.icon)
-                end
-                return t
-            end)()
+            children = alert_headers()
         },{
             args = {type = "scroll-pane", style = "naked_scroll_pane"},
             elem_mods = {horizontal_scroll_policy = "never"},
             style_mods = {minimal_height = 140, maximal_height = 560},
             children = {{
                 args = {type = "flow", direction = "horizontal"},
-                children = (function()
-                    local t = {}
-                    for alert in pairs(alert_info) do
-                        t[#t+1] = alert_column(alert)
-                    end
-                    return t
-                end)()
+                children = alert_columns()
             }}
         }}
     }}
