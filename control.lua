@@ -118,7 +118,7 @@ local function update_alerts(player, name)
         alerts[id] = alert
         for group_id, group in pairs(groups) do
             local dist = vec.mag(vec.sub(group.position, position))
-            if dist <= 20 then
+            if dist <= 32 then
                 group.count = group.count + 1
                 alert.group = group_id
                 group.alerts[id] = new_alert
