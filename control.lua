@@ -204,14 +204,6 @@ local function alert_header(name, icon)
     }
 end
 
-local function alert_headers()
-    local t = {}
-    for _, alert in pairs(alert_info) do
-        t[#t+1] = alert_header(alert.name, alert.icon)
-    end
-    return t
-end
-
 local function alert_column(name)
     return {
         args = {type = "frame", direction = "vertical", style = "inside_deep_frame"},
@@ -221,14 +213,6 @@ local function alert_column(name)
             style_mods = {vertically_stretchable = true}
         }}
     }
-end
-
-local function alert_columns()
-    local t = {}
-    for _, alert in pairs(alert_info) do
-        t[#t+1] = alert_column(alert.name)
-    end
-    return t
 end
 
 defs.alert_gui = {
@@ -253,14 +237,26 @@ defs.alert_gui = {
             }}
         },{
             args = {type = "flow", direction = "horizontal"},
-            children = alert_headers()
+            children = (function()
+                local t = {}
+                for _, alert in pairs(alert_info) do
+                    t[#t+1] = alert_header(alert.name, alert.icon)
+                end
+                return t
+            end)()
         },{
             args = {type = "scroll-pane", style = "naked_scroll_pane"},
             elem_mods = {horizontal_scroll_policy = "never"},
             style_mods = {minimal_height = 140, maximal_height = 560},
             children = {{
                 args = {type = "flow", direction = "horizontal"},
-                children = alert_columns()
+                children = (function()
+                    local t = {}
+                    for _, alert in pairs(alert_info) do
+                        t[#t+1] = alert_column(alert.name)
+                    end
+                    return t
+                end)()
             }}
         }}
     }}
