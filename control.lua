@@ -78,7 +78,7 @@ local function format_time(n)
     local pre = ""
     local post = m < 3 and "[/color][/font]" or ""
     if m == 0 then
-        pre = "[font=default-bold][color=red]" -- red
+        pre = "[font=default-bold][color=red]"
     elseif m < 3 then
         pre = "[font=default-bold][color=yellow]"
     end
@@ -151,15 +151,15 @@ end
 --- @param player LuaPlayer
 local function update_gui(player)
     local refs = global.players[player.index]
+    local game_tick = game.tick
     for name in pairs(alert_info) do
         local alert_flow = refs[name] --- @type LuaGuiElement
         local groups = refs.groups[name] --- @type table<GroupID,Group>
-        local game_tick = game.tick
 
         for id, group in pairs(groups) do
             if not alert_flow[id] then
                 glib.add(alert_flow, {
-                    args = {type = "button", name = id, index = 1, caption = alert_caption(group.count, 0), style = "list_box_item"},
+                    args = {type = "button", name = id, index = 1, caption = alert_caption(group.count, game_tick - group.tick), style = "list_box_item"},
                     style_mods = {horizontally_stretchable = true},
                     handlers = {[e.on_gui_click] = handlers.zoom_to_world}
                 })
