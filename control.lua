@@ -123,6 +123,9 @@ local function update_alerts(player)
                     goto continue
                 end
             end
+            if groups[id] then
+                error("Trying to create new group with id that is already taken. Id: " .. id)
+            end
             local group = {
                 count = 1,
                 tick = game_tick,
