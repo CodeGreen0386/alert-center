@@ -17,8 +17,8 @@ local alert_info = {
 --- @field tick uint
 --- @field alerts table<AlertID,Alert>
 
---- @alias GroupID AlertID
---- @alias AlertID string
+--- @alias GroupID string tostring of an integer that just counts up (refs.next_group_id)
+--- @alias AlertID string alert.position.x..","..alert.position.y
 
 --- @class SavedAlert
 --- @field count integer more like a timer
@@ -39,6 +39,7 @@ local function create_gui(player)
             entity_under_attack = {}, --- @type table<AlertID,SavedAlert>
             entity_destroyed = {}, --- @type table<AlertID,SavedAlert>
         },
+        next_group_id = 1
     }
     local refs = global.players[player.index]
     local _, gui = glib.add(player.gui.screen, defs.alert_gui, refs)
@@ -95,6 +96,7 @@ local function update_alerts(player)
         local alert_type = defines.alert_type[name] --[[@as defines.alert_type]]
         local polled_alerts = player.get_alerts{surface = player.surface, type = alert_type}
         if not next(polled_alerts) then return end
+
         local new_alerts = polled_alerts[player.surface.index][alert_type]
         local refs = global.players[player.index]
         local alerts = refs.alerts[name] --- @type table<AlertID,SavedAlert>
@@ -102,40 +104,45 @@ local function update_alerts(player)
         local game_tick = game.tick
         for _, new_alert in pairs(new_alerts) do
             local position = new_alert.position --[[@as MapPosition]]
-            local id = position.x..","..position.y --- @type AlertID
-            if alerts[id] then
-                local group = alerts[id].group
+            local alert_id = position.x..","..position.y --- @type AlertID
+            if alerts[alert_id] then
+                local group = alerts[alert_id].group
                 if new_alert.tick > groups[group].tick then
                     groups[group].tick = new_alert.tick
                 end
                 goto continue
             end
+
             local alert = {count = 0} --- @type SavedAlert
-            alerts[id] = alert
+            alerts[alert_id] = alert
             for group_id, group in pairs(groups) do
                 local dist = vec.mag(vec.sub(group.position, position))
                 if dist <= 32 then
                     alert.group = group_id
                     group.count = group.count + 1
                     group.tick = game_tick
-                    group.alerts[id] = new_alert
+                    group.alerts[alert_id] = new_alert
                     group.position = vec.add(vec.div(vec.sub(position, group.position), vec.new(group.count)), group.position)
                     goto continue
                 end
             end
-            if groups[id] then
-                error("Trying to create new group with id that is already taken. Id: " .. id)
+            local group_id = tostring(refs.next_group_id)
+            refs.next_group_id = refs.next_group_id + 1
+            if groups[group_id] then
+                error("Trying to create new group with id that is already taken. Id: " .. group_id)
             end
+
             local group = {
                 count = 1,
                 tick = game_tick,
-                alerts = {[id] = new_alert},
+                alerts = {[alert_id] = new_alert},
                 position = position
             } --- @type Group
-            groups[id] = group
-            alert.group = id
+            groups[group_id] = group
+            alert.group = group_id
             ::continue::
         end
+
         for alert_id, alert in pairs(alerts) do
             alert.count = alert.count + 1
             if alert.count >= 36000 / poll_rate then
