@@ -1,7 +1,4 @@
-local glib = require("__glib__/style")
 local styles = data.raw["gui-style"].default
-
-glib.generate_selected("frame_action_button")
 
 data:extend{{
     type = "sprite",

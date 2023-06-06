@@ -1,4 +1,4 @@
-local glib = require("__glib__/gui")
+local glib = require("glib")
 local e = defines.events
 local handlers = {}
 local defs = {}
@@ -39,10 +39,11 @@ local function create_gui(player)
             entity_under_attack = {}, --- @type table<AlertID,SavedAlert>
             entity_destroyed = {}, --- @type table<AlertID,SavedAlert>
         },
-        next_group_id = 1
+        next_group_id = 1,
+        renderings = {},
     }
     local refs = global.players[player.index]
-    local _, gui = glib.add(player.gui.screen, defs.alert_gui, refs)
+    local gui = glib.add(player.gui.screen, defs.alert_gui, refs)
     return gui
 end
 
@@ -223,13 +224,11 @@ end
 
 function handlers.pin_clicked(refs)
     local pin_button = refs.pin_button ---@type LuaGuiElement
-    if pin_button.style.name == "frame_action_button" then
-        pin_button.style = "frame_action_button_selected"
+    if pin_button.toggled then
         pin_button.sprite = "pin-black"
         refs.pinned = true
         refs.player.opened = nil
     else
-        pin_button.style = "frame_action_button"
         pin_button.sprite = "pin-white"
         refs.pinned = false
         refs.player.opened = refs.alert_center
@@ -238,7 +237,10 @@ end
 
 local opacity = 0.69
 function handlers.zoom_to_world(refs, event)
-    rendering.clear("alert-center") -- TODO make this clearing per player
+    local renderings = refs.renderings
+    for id in pairs(renderings) do
+        rendering.destroy(id)
+    end
     local element = event.element
     --- @type Group
     local group = refs.groups[element.parent.name][element.name]
@@ -247,8 +249,8 @@ function handlers.zoom_to_world(refs, event)
     for _, alert in pairs(group.alerts) do
         local position = alert.position or alert.target.position
         local offset = alert.prototype.alert_icon_shift
-        local scale = 0.5 --alert.prototype.alert_icon_scale
-        rendering.draw_sprite{
+        local scale = alert.prototype.alert_icon_scale
+        renderings[rendering.draw_sprite{
             sprite = sprite,
             target = position,
             target_offset = offset,
@@ -257,7 +259,7 @@ function handlers.zoom_to_world(refs, event)
             tint = {opacity, opacity, opacity, opacity},
             x_scale = scale,
             y_scale = scale
-        }
+        }] = true
     end
 end
 
@@ -316,7 +318,7 @@ defs.alert_gui = {
                 args = {type = "empty-widget", style = "draggable_space_header", ignored_by_interaction = true},
                 style_mods = {height = 24, right_margin = 4, horizontally_stretchable = true}
             },{
-                args = {type = "sprite-button", name = "pin_button", style = "frame_action_button",
+                args = {type = "sprite-button", name = "pin_button", auto_toggle = true, style = "frame_action_button",
                 sprite = "pin-white", hovered_sprite = "pin-black", clicked_sprite = "pin-black"},
                 handlers = {[e.on_gui_click] = handlers.pin_clicked}
             },{
