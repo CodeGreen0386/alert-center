@@ -310,7 +310,7 @@ defs.alert_gui = {
         args = {type = "flow", direction = "vertical"},
         style_mods = {vertical_spacing = 0},
         children = {{
-            args = {type = "flow", direction = "horizontal"},
+            args = {type = "flow", direction = "horizontal", style = "titlebar_flow"},
             drag_target = "alert_center",
             children = {{
                 args = {type = "label", caption = {"gui.alert_center"}, style = "frame_title", ignored_by_interaction = true},

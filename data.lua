@@ -5,12 +5,19 @@ data:extend{{
     name = "pin-black",
     filename = "__alert-center__/graphics/pin_black.png",
     size = 32,
+    flags = {"gui-icon"},
 },{
     type = "sprite",
     name = "pin-white",
     filename = "__alert-center__/graphics/pin_white.png",
     size = 32,
+    flags = {"gui-icon"},
 }}
+
+styles.titlebar_flow = {
+    type = "horizontal_flow_style",
+    horizontal_spacing = 8,
+}
 
 styles.list_box_frame = {
     type = "frame_style",
@@ -56,7 +63,6 @@ data:extend{{
         filename = "__core__/graphics/icons/mip/warning.png",
         priority = "extra-high-no-scale",
         size = 32,
-        scale = 0.5,
         mipmap_count = 2,
         flags = {"gui-icon"}
     },
@@ -64,7 +70,6 @@ data:extend{{
         filename = "__core__/graphics/icons/mip/warning-white.png",
         priority = "extra-high-no-scale",
         size = 32,
-        scale = 0.5,
         mipmap_count = 2,
         flags = {"gui-icon"}
     },
