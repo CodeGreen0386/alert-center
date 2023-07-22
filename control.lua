@@ -146,7 +146,8 @@ local function update_alerts(player)
 
         for alert_id, alert in pairs(alerts) do
             alert.count = alert.count + 1
-            if alert.count >= 36000 / poll_rate then
+            local alert_duration = settings.get_player_settings(player)["ac-alert-duration"].value * 3600
+            if alert.count >= alert_duration / poll_rate then
                 local group = groups[alert.group]
                 group.count = group.count - 1
                 alerts[alert_id] = nil
