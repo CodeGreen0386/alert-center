@@ -4,40 +4,40 @@ local handlers = {}
 local defs = {}
 local poll_rate = 60
 
---- @type table<string, SpritePath> name to info
+---@type table<string, SpritePath> name to info
 local alert_info = {
     turret_fire = "utility/warning_icon",
     entity_under_attack = "utility/danger_icon",
     entity_destroyed = "utility/destroyed_icon",
 }
 
---- @class Group
---- @field count integer
---- @field position MapPosition
---- @field tick uint
---- @field alerts table<AlertID,Alert>
+---@class Group
+---@field count integer
+---@field position MapPosition
+---@field tick uint
+---@field alerts table<AlertID,Alert>
 
---- @alias GroupID string tostring of an integer that just counts up (refs.next_group_id)
---- @alias AlertID string alert.position.x..","..alert.position.y
+---@alias GroupID string tostring of an integer that just counts up (refs.next_group_id)
+---@alias AlertID string alert.position.x..","..alert.position.y
 
---- @class SavedAlert
---- @field count integer more like a timer
---- @field group GroupID
+---@class SavedAlert
+---@field count integer more like a timer
+---@field group GroupID
 
---- @param player LuaPlayer
---- @return LuaGuiElement
+---@param player LuaPlayer
+---@return LuaGuiElement
 local function create_gui(player)
     global.players[player.index] = {
         player = player,
         groups = {
-            turret_fire = {}, --- @type table<GroupID,Group>
-            entity_under_attack = {}, --- @type table<GroupID,Group>
-            entity_destroyed = {}, --- @type table<GroupID,Group>
+            turret_fire = {}, ---@type table<GroupID,Group>
+            entity_under_attack = {}, ---@type table<GroupID,Group>
+            entity_destroyed = {}, ---@type table<GroupID,Group>
         },
         alerts = {
-            turret_fire = {}, --- @type table<AlertID,SavedAlert>
-            entity_under_attack = {}, --- @type table<AlertID,SavedAlert>
-            entity_destroyed = {}, --- @type table<AlertID,SavedAlert>
+            turret_fire = {}, ---@type table<AlertID,SavedAlert>
+            entity_under_attack = {}, ---@type table<AlertID,SavedAlert>
+            entity_destroyed = {}, ---@type table<AlertID,SavedAlert>
         },
         next_group_id = 1,
         renderings = {},
@@ -47,7 +47,7 @@ local function create_gui(player)
     return gui
 end
 
---- @param player LuaPlayer
+---@param player LuaPlayer
 local function setup_player(player)
     local gui = create_gui(player)
     gui.visible = false
@@ -91,7 +91,7 @@ local function alert_caption(count, time)
     return {"", {"alert-caption.count", count}, " (", format_time(time), ")"}
 end
 
---- @param player LuaPlayer
+---@param player LuaPlayer
 local function update_alerts(player)
     for name in pairs(alert_info) do
         local alert_type = defines.alert_type[name] --[[@as defines.alert_type]]
@@ -100,12 +100,12 @@ local function update_alerts(player)
 
         local new_alerts = polled_alerts[player.surface.index][alert_type]
         local refs = global.players[player.index]
-        local alerts = refs.alerts[name] --- @type table<AlertID,SavedAlert>
-        local groups = refs.groups[name] --- @type table<GroupID,Group>
+        local alerts = refs.alerts[name] ---@type table<AlertID,SavedAlert>
+        local groups = refs.groups[name] ---@type table<GroupID,Group>
         local game_tick = game.tick
         for _, new_alert in pairs(new_alerts) do
             local position = new_alert.position --[[@as MapPosition]]
-            local alert_id = position.x..","..position.y --- @type AlertID
+            local alert_id = position.x..","..position.y ---@type AlertID
             if alerts[alert_id] then
                 local group = alerts[alert_id].group
                 if new_alert.tick > groups[group].tick then
@@ -114,7 +114,7 @@ local function update_alerts(player)
                 goto continue
             end
 
-            local alert = {count = 0} --- @type SavedAlert
+            local alert = {count = 0} ---@type SavedAlert
             alerts[alert_id] = alert
             for group_id, group in pairs(groups) do
                 local dist = vec.mag(vec.sub(group.position, position))
@@ -138,7 +138,7 @@ local function update_alerts(player)
                 tick = game_tick,
                 alerts = {[alert_id] = new_alert},
                 position = position
-            } --- @type Group
+            } ---@type Group
             groups[group_id] = group
             alert.group = group_id
             ::continue::
@@ -159,13 +159,13 @@ local function update_alerts(player)
     end
 end
 
---- @param player LuaPlayer
+---@param player LuaPlayer
 local function update_gui(player)
     local refs = global.players[player.index]
     local game_tick = game.tick
     for name in pairs(alert_info) do
-        local alert_flow = refs[name] --- @type LuaGuiElement
-        local groups = refs.groups[name] --- @type table<GroupID,Group>
+        local alert_flow = refs[name] ---@type LuaGuiElement
+        local groups = refs.groups[name] ---@type table<GroupID,Group>
 
         for id, group in pairs(groups) do
             if not alert_flow[id] then
@@ -242,7 +242,7 @@ function handlers.zoom_to_world(refs, event)
         rendering.destroy(id)
     end
     local element = event.element
-    --- @type Group
+    ---@type Group
     local group = refs.groups[element.parent.name][element.name]
     refs.player.zoom_to_world(group.position, 0.8)
     local sprite = alert_info[element.parent.name]
